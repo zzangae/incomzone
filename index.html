@@ -4,54 +4,98 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>incomzone</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background: #f9f9f9;
+      transition: background-color 0.8s ease, color 0.8s ease;
+    }
+    #status {
+      font-size: 1.5rem;
+      text-align: center;
+      color: #333;
+    }
+    #transition {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: white;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.8rem;
+      color: #555;
+      transition: opacity 1s ease;
+      z-index: 9999;
+    }
+  </style>
   <script>
-    // VM 주소 (루트 도메인)
-    const VM_URL = "https://incomzone.co.kr"; // 반드시 VM이 직접 연결된 도메인
-
-    // 현재 시각 (한국 시간)
+    const VM_URL = "http://incomzone.co.kr";
     const now = new Date();
     const hourKST = (now.getUTCHours() + 9) % 24;
+    const minuteKST = now.getUTCMinutes();
+    const currentTimeMinutes = hourKST * 60 + minuteKST; // 현재 시각(분 단위)
 
-    // VM이 응답하는지 확인하는 함수
     async function isVMOnline() {
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 2000);
-        // HEAD 요청으로 가볍게 체크
-        await fetch(VM_URL, {
-          method: "HEAD",
-          mode: "no-cors",
-          signal: controller.signal
-        });
+        await fetch(VM_URL, { method: "HEAD", mode: "no-cors", signal: controller.signal });
         clearTimeout(timeout);
         return true;
-      } catch (e) {
-        console.log("VM offline or unreachable:", e);
+      } catch {
         return false;
       }
     }
 
-    // 메인 로직
-    async function main() {
-      if (hourKST >= 8 && hourKST < 20) {
-        // 주간에는 무조건 VM이 우선
-        const vmAlive = await isVMOnline();
-        if (vmAlive) {
-          console.log("VM is alive. Redirecting...");
-          window.location.replace(VM_URL); // replace()는 히스토리에 남기지 않음
-        } else {
-          console.log("VM is off. Stay on GitHub Pages.");
-        }
-      } else {
-        console.log("Night hours. Stay on GitHub Pages.");
-      }
+    function showStatus(msg) {
+      document.getElementById("status").innerText = msg;
     }
 
-    main();
+    function showTransition(msg) {
+      const overlay = document.getElementById("transition");
+      overlay.innerText = msg;
+      overlay.style.display = "flex";
+      overlay.style.opacity = "1";
+    }
+
+    async function main() {
+      const vmAlive = await isVMOnline();
+
+      // 07:30~08:00 사이: "곧 시작됩니다" 메시지 표시
+      const startMinutes = 8 * 60; // 08:00
+      const preStartMinutes = 7 * 60 + 30; // 07:30
+      const isPreStartTime = (currentTimeMinutes >= preStartMinutes && currentTimeMinutes < startMinutes);
+
+      if (hourKST >= 8 && hourKST < 20) {
+        // 주간: VM이 우선
+        if (vmAlive) {
+          showTransition("서비스로 이동중입니다...");
+          setTimeout(() => window.location.replace(VM_URL), 1500);
+        } else {
+          showStatus("현재 VM 이 준비 중입니다. 잠시 후 연결됩니다.");
+          setTimeout(main, 60000); // 1분마다 재시도
+        }
+      } else if (isPreStartTime) {
+        // VM 시작 30분 전 UX 메시지
+        showStatus("잠시 후 서비스가 시작됩니다.");
+        setTimeout(main, 60000); // 1분마다 재시도
+      } else {
+        // 야간: GitHub Pages 유지
+        showStatus("현재는 정기 점검 시간입니다. 서비스는 오전 8시에 재개됩니다.");
+      }
+    }
+    window.onload = main;
   </script>
 </head>
 <body>
-  <h1>현재 GitHub Pages 모드입니다</h1>
-  <p>서비스는 오전 8시~오후 8시 사이에 VM으로 자동 전환됩니다.</p>
+  <div id="status">초기화 중...</div>
+  <div id="transition"></div>
 </body>
 </html>
