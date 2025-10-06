@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>incomzone</title>
+  <script>
+    // VM 주소 (루트 도메인)
+    const VM_URL = "https://incomzone.co.kr"; // 반드시 VM이 직접 연결된 도메인
+
+    // 현재 시각 (한국 시간)
+    const now = new Date();
+    const hourKST = (now.getUTCHours() + 9) % 24;
+
+    // VM이 응답하는지 확인하는 함수
+    async function isVMOnline() {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 2000);
+        // HEAD 요청으로 가볍게 체크
+        await fetch(VM_URL, {
+          method: "HEAD",
+          mode: "no-cors",
+          signal: controller.signal
+        });
+        clearTimeout(timeout);
+        return true;
+      } catch (e) {
+        console.log("VM offline or unreachable:", e);
+        return false;
+      }
+    }
+
+    // 메인 로직
+    async function main() {
+      if (hourKST >= 8 && hourKST < 20) {
+        // 주간에는 무조건 VM이 우선
+        const vmAlive = await isVMOnline();
+        if (vmAlive) {
+          console.log("VM is alive. Redirecting...");
+          window.location.replace(VM_URL); // replace()는 히스토리에 남기지 않음
+        } else {
+          console.log("VM is off. Stay on GitHub Pages.");
+        }
+      } else {
+        console.log("Night hours. Stay on GitHub Pages.");
+      }
+    }
+
+    main();
+  </script>
+</head>
+<body>
+  <h1>현재 GitHub Pages 모드입니다</h1>
+  <p>서비스는 오전 8시~오후 8시 사이에 VM으로 자동 전환됩니다.</p>
+</body>
+</html>
