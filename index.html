@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>incomzone</title>
+  <title>인컴존 www.incomzone.co.kr</title>
   <style>
+    :root { color-scheme: light dark; }
     body {
       font-family: sans-serif;
       display: flex;
@@ -13,35 +14,79 @@
       align-items: center;
       height: 100vh;
       margin: 0;
-      background: #f9f9f9;
-      transition: background-color 0.8s ease, color 0.8s ease;
+      transition: background-color 0.6s ease, color 0.6s ease;
+      text-align: center;
     }
+    /* 테마 색상 */
+    body.light { background-color: #f9f9f9; color: #222; }
+    body.dark { background-color: #1e1e1e; color: #ddd; }
+
+    /* 상태 텍스트 */
     #status {
       font-size: 1.5rem;
-      text-align: center;
-      color: #333;
+      line-height: 2.2rem;
+      white-space: pre-line;
     }
+
+    /* 부드러운 전환 오버레이 */
     #transition {
       position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: white;
+      inset: 0;
       display: none;
       justify-content: center;
       align-items: center;
       font-size: 1.8rem;
-      color: #555;
-      transition: opacity 1s ease;
+      background-color: rgba(255,255,255,0.95);
+      color: #444;
       z-index: 9999;
+      transition: opacity 0.8s ease;
     }
+    body.dark #transition {
+      background-color: rgba(20,20,20,0.95);
+      color: #ddd;
+    }
+
+    /* 테마 토글 버튼 */
+    #themeToggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: none;
+      border: 1px solid #aaa;
+      border-radius: 50%;
+      width: 45px;
+      height: 45px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    body.light #themeToggle:hover { background: #eee; }
+    body.dark #themeToggle:hover { background: #333; color: #fff; }
   </style>
   <script>
     const VM_URL = "http://incomzone.co.kr";
     const now = new Date();
     const hourKST = (now.getUTCHours() + 9) % 24;
     const minuteKST = now.getUTCMinutes();
-    const currentTimeMinutes = hourKST * 60 + minuteKST; // 현재 시각(분 단위)
+    const currentTimeMinutes = hourKST * 60 + minuteKST;
 
+    // 테마 로드 및 전환
+    function loadTheme() {
+      const savedTheme = localStorage.getItem("theme") || "light";
+      document.body.classList.remove("light", "dark");
+      document.body.classList.add(savedTheme);
+      document.getElementById("themeToggle").innerText = savedTheme === "dark" ? "🌙" : "🌞";
+    }
+
+    function toggleTheme() {
+      const newTheme = document.body.classList.contains("dark") ? "light" : "dark";
+      document.body.classList.remove("light", "dark");
+      document.body.classList.add(newTheme);
+      localStorage.setItem("theme", newTheme);
+      document.getElementById("themeToggle").innerText = newTheme === "dark" ? "🌙" : "🌞";
+    }
+
+    // VM 상태 확인
     async function isVMOnline() {
       try {
         const controller = new AbortController();
@@ -66,35 +111,34 @@
     }
 
     async function main() {
+      loadTheme();
       const vmAlive = await isVMOnline();
 
-      // 07:30~08:00 사이: "곧 시작됩니다" 메시지 표시
       const startMinutes = 8 * 60; // 08:00
       const preStartMinutes = 7 * 60 + 30; // 07:30
       const isPreStartTime = (currentTimeMinutes >= preStartMinutes && currentTimeMinutes < startMinutes);
 
       if (hourKST >= 8 && hourKST < 20) {
-        // 주간: VM이 우선
         if (vmAlive) {
           showTransition("서비스로 이동중입니다...");
           setTimeout(() => window.location.replace(VM_URL), 1500);
         } else {
-          showStatus("현재 VM 이 준비 중입니다. 잠시 후 연결됩니다.");
-          setTimeout(main, 60000); // 1분마다 재시도
+          showStatus("현재 VM이 준비 중입니다.\n잠시 후 연결됩니다.");
+          setTimeout(main, 60000);
         }
       } else if (isPreStartTime) {
-        // VM 시작 30분 전 UX 메시지
         showStatus("잠시 후 서비스가 시작됩니다.");
-        setTimeout(main, 60000); // 1분마다 재시도
+        setTimeout(main, 60000);
       } else {
-        // 야간: GitHub Pages 유지
-        showStatus("현재는 정기 점검 시간입니다. 서비스는 오전 8시에 재개됩니다.");
+        showStatus("현재는 정기 점검 시간입니다.\n서비스는 오전 8시에 재개됩니다.");
       }
     }
+
     window.onload = main;
   </script>
 </head>
 <body>
+  <button id="themeToggle" onclick="toggleTheme()">🌞</button>
   <div id="status">초기화 중...</div>
   <div id="transition"></div>
 </body>
