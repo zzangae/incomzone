@@ -21,3 +21,10 @@ index.html 의 JS 시간·상태 감지 로직도 정상 작동 중이며,<br>
 |--|--|--|--|
 |GitHub Pages|www.incomzone.co.kr|zzangae.github.io	야간(20~08시)|그대로 표시|
 |VM 서버|incomzone.co.kr|VM 공인 IP 주간(08~20시) | JS 감지 후 자동 리디렉트|
+
+## 현재 시스템 상태 요약
+|조건|동작 결과|설명|
+|--|--|--|
+|주간 (08~20시) + VM ON	|➜ VM(incomzone.co.kr) 로 자동 리디렉트|실서비스 가동|
+|주간 (08~20시) + VM OFF	|➜ GitHub Pages(www.incomzone.co.kr) 표시|리디렉트 실패 → GitHub 유지|
+|야간 (20~08시)	|➜ 무조건 GitHub Pages 표시|VM 상태 상관없이 유지|
