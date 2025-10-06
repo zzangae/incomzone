@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>인컴존 www.incomzone.co.kr</title>
   <style>
     :root { color-scheme: light dark; }
@@ -16,19 +16,18 @@
       margin: 0;
       transition: background-color 0.6s ease, color 0.6s ease;
       text-align: center;
+      overflow: hidden;
     }
-    /* 테마 색상 */
     body.light { background-color: #f9f9f9; color: #222; }
     body.dark { background-color: #1e1e1e; color: #ddd; }
 
-    /* 상태 텍스트 */
     #status {
       font-size: 1.5rem;
       line-height: 2.2rem;
       white-space: pre-line;
     }
 
-    /* 부드러운 전환 오버레이 */
+    /* 전환 오버레이 */
     #transition {
       position: fixed;
       inset: 0;
@@ -38,7 +37,7 @@
       font-size: 1.8rem;
       background-color: rgba(255,255,255,0.95);
       color: #444;
-      z-index: 9999;
+      z-index: 9000;
       transition: opacity 0.8s ease;
     }
     body.dark #transition {
@@ -46,11 +45,20 @@
       color: #ddd;
     }
 
-    /* 테마 토글 버튼 */
-    #themeToggle {
+    /* 테마 전환 컨테이너 */
+    #themeContainer {
       position: fixed;
       top: 20px;
       right: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 9999;
+      font-size: 1rem;
+      user-select: none;
+    }
+
+    #themeToggle {
       background: none;
       border: 1px solid #aaa;
       border-radius: 50%;
@@ -60,8 +68,14 @@
       cursor: pointer;
       transition: background-color 0.3s, color 0.3s;
     }
+
     body.light #themeToggle:hover { background: #eee; }
     body.dark #themeToggle:hover { background: #333; color: #fff; }
+
+    #themeLabel {
+      font-size: 0.95rem;
+      opacity: 0.8;
+    }
   </style>
   <script>
     const VM_URL = "http://incomzone.co.kr";
@@ -70,23 +84,26 @@
     const minuteKST = now.getUTCMinutes();
     const currentTimeMinutes = hourKST * 60 + minuteKST;
 
-    // 테마 로드 및 전환
+    // 🎨 테마 로드 및 전환
     function loadTheme() {
-      const savedTheme = localStorage.getItem("theme") || "light";
+      const saved = localStorage.getItem("theme") || "light";
       document.body.classList.remove("light", "dark");
-      document.body.classList.add(savedTheme);
-      document.getElementById("themeToggle").innerText = savedTheme === "dark" ? "🌙" : "🌞";
+      document.body.classList.add(saved);
+      const isDark = saved === "dark";
+      document.getElementById("themeToggle").innerText = isDark ? "🌙" : "🌞";
+      document.getElementById("themeLabel").innerText = isDark ? "다크" : "라이트";
     }
 
     function toggleTheme() {
-      const newTheme = document.body.classList.contains("dark") ? "light" : "dark";
+      const next = document.body.classList.contains("dark") ? "light" : "dark";
       document.body.classList.remove("light", "dark");
-      document.body.classList.add(newTheme);
-      localStorage.setItem("theme", newTheme);
-      document.getElementById("themeToggle").innerText = newTheme === "dark" ? "🌙" : "🌞";
+      document.body.classList.add(next);
+      localStorage.setItem("theme", next);
+      const isDark = next === "dark";
+      document.getElementById("themeToggle").innerText = isDark ? "🌙" : "🌞";
+      document.getElementById("themeLabel").innerText = isDark ? "다크" : "라이트";
     }
 
-    // VM 상태 확인
     async function isVMOnline() {
       try {
         const controller = new AbortController();
@@ -100,6 +117,8 @@
     }
 
     function showStatus(msg) {
+      const trans = document.getElementById("transition");
+      trans.style.display = "none"; // 오버레이 숨김
       document.getElementById("status").innerText = msg;
     }
 
@@ -138,7 +157,11 @@
   </script>
 </head>
 <body>
-  <button id="themeToggle" onclick="toggleTheme()">🌞</button>
+  <div id="themeContainer">
+    <button id="themeToggle" onclick="toggleTheme()">🌞</button>
+    <span id="themeLabel">라이트</span>
+  </div>
+
   <div id="status">초기화 중...</div>
   <div id="transition"></div>
 </body>
