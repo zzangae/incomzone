@@ -24,70 +24,41 @@
     body.light { background-color: #f9f9f9; color: #222; }
     body.dark { background-color: #1e1e1e; color: #ddd; }
 
-    #status {
-      font-size: 1.5rem;
-      line-height: 2.2rem;
-      white-space: pre-line;
-    }
+    #status { font-size: 1.5rem; line-height: 2.2rem; white-space: pre-line; }
 
-    /* 전환 오버레이 */
     #transition {
-      position: fixed;
-      inset: 0;
-      display: none;
-      justify-content: center;
-      align-items: center;
-      font-size: 1.8rem;
-      background-color: rgba(255,255,255,0.95);
-      color: #444;
-      z-index: 9000;
-      transition: opacity 0.8s ease;
+      position: fixed; inset: 0;
+      display: none; justify-content: center; align-items: center;
+      font-size: 1.8rem; background-color: rgba(255,255,255,0.95);
+      color: #444; z-index: 9000; transition: opacity 0.8s ease;
     }
-    body.dark #transition {
-      background-color: rgba(20,20,20,0.95);
-      color: #ddd;
-    }
+    body.dark #transition { background-color: rgba(20,20,20,0.95); color: #ddd; }
 
-    /* 테마 전환 컨테이너 */
     #themeContainer {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      z-index: 9999;
-      font-size: 1rem;
-      user-select: none;
+      position: fixed; top: 20px; right: 20px;
+      display: flex; align-items: center; gap: 8px;
+      z-index: 9999; font-size: 1rem; user-select: none;
     }
-
     #themeToggle {
-      background: none;
-      border: 1px solid #aaa;
-      border-radius: 50%;
-      width: 45px;
-      height: 45px;
-      font-size: 1.2rem;
-      cursor: pointer;
+      background: none; border: 1px solid #aaa; border-radius: 50%;
+      width: 45px; height: 45px; font-size: 1.2rem; cursor: pointer;
       transition: background-color 0.3s, color 0.3s;
     }
-
     body.light #themeToggle:hover { background: #eee; }
     body.dark #themeToggle:hover { background: #333; color: #fff; }
-
-    #themeLabel {
-      font-size: 0.95rem;
-      opacity: 0.8;
-    }
+    #themeLabel { font-size: 0.95rem; opacity: 0.8; }
   </style>
   <script>
     const VM_URL = "https://incomzone.co.kr";
-    const now = new Date();
-    const hourKST = (now.getUTCHours() + 9) % 24;
-    const minuteKST = now.getUTCMinutes();
-    const currentTimeMinutes = hourKST * 60 + minuteKST;
 
-    // 테마 로드 및 전환
+    function getKSTTime() {
+      const now = new Date();
+      const hourKST = (now.getUTCHours() + 9) % 24;
+      const minuteKST = now.getUTCMinutes();
+      return { hourKST, minuteKST, currentTimeMinutes: hourKST * 60 + minuteKST };
+    }
+
+    // 🌙 테마 로드 및 전환
     function loadTheme() {
       const saved = localStorage.getItem("theme") || "light";
       document.body.classList.remove("light", "dark");
@@ -96,7 +67,6 @@
       document.getElementById("themeToggle").innerText = isDark ? "🌙" : "🌞";
       document.getElementById("themeLabel").innerText = isDark ? "다크" : "라이트";
     }
-
     function toggleTheme() {
       const next = document.body.classList.contains("dark") ? "light" : "dark";
       document.body.classList.remove("light", "dark");
@@ -107,22 +77,32 @@
       document.getElementById("themeLabel").innerText = isDark ? "다크" : "라이트";
     }
 
+    // 🧪 VM 응답 확인 (디버그 포함)
     async function isVMOnline() {
+      console.log("🔍 [CHECK] VM 상태 점검 중:", VM_URL);
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 2500);
-        const res = await fetch(VM_URL, { method: "GET", signal: controller.signal, cache: "no-store" });
+        const res = await fetch(VM_URL, {
+          method: "GET",
+          redirect: "follow",
+          mode: "cors",
+          cache: "no-store",
+          signal: controller.signal
+        });
         clearTimeout(timeout);
-        return res.ok; // HTTP 200~299일 경우 true
-      } catch {
+        console.log("✅ [FETCH RESULT]", res.status, res.statusText);
+        console.log("🔗 [URL after redirect]", res.url);
+        return res.ok;
+      } catch (err) {
+        console.error("❌ [FETCH ERROR]", err);
         return false;
       }
     }
 
     function showStatus(msg) {
-      const trans = document.getElementById("transition");
-      trans.style.display = "none";
-      document.getElementById("status").innerHTML = msg;  // innerText → innerHTML
+      document.getElementById("transition").style.display = "none";
+      document.getElementById("status").innerHTML = msg;
     }
 
     function showTransition(msg) {
@@ -134,24 +114,32 @@
 
     async function main() {
       loadTheme();
+      const { hourKST, currentTimeMinutes } = getKSTTime();
       const vmAlive = await isVMOnline();
 
       const startMinutes = 8 * 60; // 08:00
-      const preStartMinutes = 7 * 60 + 30; // 07:30
-      const isPreStartTime = (currentTimeMinutes >= preStartMinutes && currentTimeMinutes < startMinutes);
+      const preStartMinutes = 7 * 60 + 30;
+      const isPreStartTime = currentTimeMinutes >= preStartMinutes && currentTimeMinutes < startMinutes;
+
+      console.log(`🕗 [TIME] 현재 한국시간 ${hourKST}시 (${currentTimeMinutes}분)`);
 
       if (hourKST >= 8 && hourKST < 20) {
+        console.log("⏰ [STATE] 서비스 시간대입니다 (08~20시).");
         if (vmAlive) {
+          console.log("🌐 [ACTION] VM 응답 정상 → 이동 시작");
           showTransition("서비스로 이동중입니다...");
           setTimeout(() => (window.location.href = VM_URL), 1500);
         } else {
+          console.warn("⚠️ [ACTION] VM 미응답 → 대기 메시지 표시");
           showStatus("현재 VM이 준비 중입니다.<br>잠시 후 연결됩니다.");
           setTimeout(main, 60000);
         }
       } else if (isPreStartTime) {
+        console.log("🕕 [STATE] 서비스 시작 전(07:30~08:00)");
         showStatus("잠시 후 서비스가 시작됩니다.");
         setTimeout(main, 60000);
       } else {
+        console.log("🌙 [STATE] 점검 시간대 (20:00~08:00)");
         showStatus("현재는 정기 점검 시간입니다.<br>서비스는 오전 8시에 재개됩니다.");
       }
     }
