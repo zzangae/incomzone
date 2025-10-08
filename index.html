@@ -121,8 +121,8 @@
 
     function showStatus(msg) {
       const trans = document.getElementById("transition");
-      trans.style.display = "none"; // 오버레이 숨김
-      document.getElementById("status").innerText = msg;
+      trans.style.display = "none";
+      document.getElementById("status").innerHTML = msg;  // innerText → innerHTML
     }
 
     function showTransition(msg) {
