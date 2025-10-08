@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>인컴존 www.incomzone.co.kr</title>
   <style>
     :root { color-scheme: light dark; }
@@ -78,7 +81,7 @@
     }
   </style>
   <script>
-    const VM_URL = "http://incomzone.co.kr";
+    const VM_URL = "https://incomzone.co.kr";
     const now = new Date();
     const hourKST = (now.getUTCHours() + 9) % 24;
     const minuteKST = now.getUTCMinutes();
@@ -107,10 +110,10 @@
     async function isVMOnline() {
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 2000);
-        await fetch(VM_URL, { method: "HEAD", mode: "no-cors", signal: controller.signal });
+        const timeout = setTimeout(() => controller.abort(), 2500);
+        const res = await fetch(VM_URL, { method: "GET", signal: controller.signal, cache: "no-store" });
         clearTimeout(timeout);
-        return true;
+        return res.ok; // HTTP 200~299일 경우 true
       } catch {
         return false;
       }
@@ -140,16 +143,16 @@
       if (hourKST >= 8 && hourKST < 20) {
         if (vmAlive) {
           showTransition("서비스로 이동중입니다...");
-          setTimeout(() => window.location.replace(VM_URL), 1500);
+          setTimeout(() => (window.location.href = VM_URL), 1500);
         } else {
-          showStatus("현재 VM이 준비 중입니다.\n잠시 후 연결됩니다.");
+          showStatus("현재 VM이 준비 중입니다.<br>잠시 후 연결됩니다.");
           setTimeout(main, 60000);
         }
       } else if (isPreStartTime) {
         showStatus("잠시 후 서비스가 시작됩니다.");
         setTimeout(main, 60000);
       } else {
-        showStatus("현재는 정기 점검 시간입니다.\n서비스는 오전 8시에 재개됩니다.");
+        showStatus("현재는 정기 점검 시간입니다.<br>서비스는 오전 8시에 재개됩니다.");
       }
     }
 
